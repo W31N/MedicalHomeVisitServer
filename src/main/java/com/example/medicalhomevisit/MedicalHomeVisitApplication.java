@@ -12,9 +12,4 @@ public class MedicalHomeVisitApplication {
     public static void main(String[] args) {
         SpringApplication.run(MedicalHomeVisitApplication.class, args);
     }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 }

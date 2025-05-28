@@ -37,7 +37,7 @@ public class Patient extends BaseEntity {
     }
 
     @Temporal(TemporalType.DATE)
-    @Column(nullable = false)
+    @Column(nullable = true)
     public Date getDateOfBirth() {
         return dateOfBirth;
     }
@@ -47,7 +47,7 @@ public class Patient extends BaseEntity {
     }
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     public Gender getGender() {
         return gender;
     }
@@ -56,16 +56,16 @@ public class Patient extends BaseEntity {
         this.gender = gender;
     }
 
+    @Column(nullable = true)
     public String getAddress() {
         return address;
     }
 
-    @Column(nullable = false)
     public void setAddress(String address) {
         this.address = address;
     }
 
-    @Column(nullable = false)
+    @Column(nullable = true, unique = true)
     public String getPhoneNumber() {
         return phoneNumber;
     }
@@ -74,7 +74,7 @@ public class Patient extends BaseEntity {
         this.phoneNumber = phoneNumber;
     }
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = true, unique = true)
     public String getPolicyNumber() {
         return policyNumber;
     }
