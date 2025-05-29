@@ -65,7 +65,7 @@ public class Patient extends BaseEntity {
         this.address = address;
     }
 
-    @Column(nullable = true, unique = true)
+    @Column(nullable = true)
     public String getPhoneNumber() {
         return phoneNumber;
     }
@@ -74,7 +74,7 @@ public class Patient extends BaseEntity {
         this.phoneNumber = phoneNumber;
     }
 
-    @Column(nullable = true, unique = true)
+    @Column(nullable = true)
     public String getPolicyNumber() {
         return policyNumber;
     }
