@@ -39,10 +39,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody PatientSelfRegisterRequest request) { // Используем PatientSelfRegisterRequest и валидацию
         try {
-            UserDto userDto = authService.signUp(request);
+            LoginResponse loginResponse = authService.signUp(request);
             // В случае успеха можно вернуть созданного пользователя или просто статус 201 Created
             // Возврат UserDto может быть полезен клиенту для немедленного использования данных
-            return ResponseEntity.status(HttpStatus.CREATED).body(userDto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
         } catch (RuntimeException e) {
             // Например, "Пароли не совпадают" или "Email уже используется"
             // Эти ошибки лучше обрабатывать с помощью @RestControllerAdvice и кастомных исключений

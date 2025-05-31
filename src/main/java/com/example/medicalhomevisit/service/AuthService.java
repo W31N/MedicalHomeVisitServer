@@ -55,7 +55,7 @@ public class AuthService {
         return new LoginResponse(jwt, convertToUserDto(user));
     }
 
-    public UserDto signUp(PatientSelfRegisterRequest request) {
+    public LoginResponse signUp(PatientSelfRegisterRequest request) {
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("Пароли не совпадают");
         }
@@ -63,11 +63,12 @@ public class AuthService {
             throw new RuntimeException("Email уже используется");
         }
 
+        // Создание пользователя (ваш существующий код)
         UserEntity user = new UserEntity();
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFullName(request.getFullName());
-        user.setActive(true); // Активируем пользователя сразу
+        user.setActive(true);
 
         Role patientRole = roleRepository.findByName(UserRole.PATIENT)
                 .orElseGet(() -> {
@@ -79,10 +80,9 @@ public class AuthService {
 
         UserEntity savedUser = userRepository.save(user);
 
-
+        // Создание профиля пациента
         Patient patient = new Patient();
         patient.setUser(savedUser);
-
         patient.setDateOfBirth(null);
         patient.setGender(Gender.UNKNOWN);
         patient.setAddress("Адрес не указан");
@@ -90,10 +90,20 @@ public class AuthService {
         patient.setPolicyNumber("");
         patient.setAllergies(new ArrayList<>());
         patient.setChronicConditions(new ArrayList<>());
-
         patientRepository.save(patient);
 
-        return convertToUserDto(savedUser);
+        // НОВОЕ: Создаём аутентификацию и генерируем токен
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
+
+        String jwt = tokenProvider.generateToken(authentication);
+
+        // Возвращаем LoginResponse вместо UserDto
+        return new LoginResponse(jwt, convertToUserDto(savedUser));
     }
 
     public void signOut() {

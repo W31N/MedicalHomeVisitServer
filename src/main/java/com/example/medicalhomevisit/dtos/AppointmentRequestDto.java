@@ -7,6 +7,9 @@ import java.util.UUID;
 
 public class AppointmentRequestDto {
     private UUID id;
+    private UUID patientId; // Добавить
+    private String patientName; // Добавить
+    private String patientPhone; // Добавить
     private String emailPatient;
     private String address;
     private RequestType requestType;
@@ -14,11 +17,15 @@ public class AppointmentRequestDto {
     private String additionalNotes;
     private Date preferredDateTime;
     private RequestStatus status;
+    private UUID assignedStaffId; // Добавить
+    private String assignedStaffName; // Добавить
     private String assignedStaffEmail;
-    private String assignedByUserEmail;    // ID пользователя (админа/диспетчера), кто назначил
+    private String assignedByUserEmail;
     private Date assignedAt;
     private String assignmentNote;
     private String responseMessage;
+    private Date createdAt; // Добавить
+    private Date updatedAt; // Добавить
 
     public UUID getId() {
         return id;
@@ -26,6 +33,30 @@ public class AppointmentRequestDto {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public UUID getPatientId() {
+        return patientId;
+    }
+
+    public void setPatientId(UUID patientId) {
+        this.patientId = patientId;
+    }
+
+    public String getPatientName() {
+        return patientName;
+    }
+
+    public void setPatientName(String patientName) {
+        this.patientName = patientName;
+    }
+
+    public String getPatientPhone() {
+        return patientPhone;
+    }
+
+    public void setPatientPhone(String patientPhone) {
+        this.patientPhone = patientPhone;
     }
 
     public String getEmailPatient() {
@@ -84,6 +115,22 @@ public class AppointmentRequestDto {
         this.status = status;
     }
 
+    public UUID getAssignedStaffId() {
+        return assignedStaffId;
+    }
+
+    public void setAssignedStaffId(UUID assignedStaffId) {
+        this.assignedStaffId = assignedStaffId;
+    }
+
+    public String getAssignedStaffName() {
+        return assignedStaffName;
+    }
+
+    public void setAssignedStaffName(String assignedStaffName) {
+        this.assignedStaffName = assignedStaffName;
+    }
+
     public String getAssignedStaffEmail() {
         return assignedStaffEmail;
     }
@@ -122,5 +169,21 @@ public class AppointmentRequestDto {
 
     public void setResponseMessage(String responseMessage) {
         this.responseMessage = responseMessage;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
