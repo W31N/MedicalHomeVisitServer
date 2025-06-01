@@ -12,6 +12,7 @@ public class AppointmentRequest extends BaseEntity {
     private Patient patient;
     private MedicalPerson medicalPerson;
     private UserEntity assignedBy;
+    private String address;
 
     private RequestType requestType;
     private String symptoms;
@@ -34,6 +35,14 @@ public class AppointmentRequest extends BaseEntity {
 
     public void setPatient(Patient patient) {
         this.patient = patient;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -3,17 +3,15 @@ package com.example.medicalhomevisit.service;
 import com.example.medicalhomevisit.dtos.*;
 import com.example.medicalhomevisit.models.entities.*;
 import com.example.medicalhomevisit.models.enums.RequestStatus;
+import com.example.medicalhomevisit.models.enums.RequestType;
 import com.example.medicalhomevisit.models.enums.UserRole;
-import com.example.medicalhomevisit.models.enums.VisitStatus; // Для создания визита
+import com.example.medicalhomevisit.models.enums.VisitStatus;
 import com.example.medicalhomevisit.repositories.*;
-// import com.example.medicalhomevisit.exception.*; // Ваши кастомные исключения
 import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,7 +52,16 @@ public class AppointmentRequestService {
         AppointmentRequest request = new AppointmentRequest();
 
         request.setPatient(patient);
-        request.setRequestType(createDto.getRequestType());
+        request.setAddress(createDto.getAddress());
+
+        // Преобразуем строку в enum
+        try {
+            RequestType requestType = RequestType.valueOf(createDto.getRequestType());
+            request.setRequestType(requestType);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Неверный тип заявки: " + createDto.getRequestType());
+        }
+
         request.setSymptoms(createDto.getSymptoms());
         request.setAdditionalNotes(createDto.getAdditionalNotes());
         request.setStatus(RequestStatus.NEW);
@@ -279,30 +286,28 @@ public class AppointmentRequestService {
 
     private AppointmentRequestDto convertToDto(AppointmentRequest entity) {
         AppointmentRequestDto dto = new AppointmentRequestDto();
-        dto.setId(entity.getId());
+        dto.setId(entity.getId().toString());
 
         if (entity.getPatient() != null) {
-            dto.setPatientId(entity.getPatient().getId());
+            dto.setPatientId(entity.getPatient().getId().toString());
             dto.setPatientName(entity.getPatient().getUser().getFullName());
             dto.setPatientPhone(entity.getPatient().getPhoneNumber());
-            dto.setEmailPatient(entity.getPatient().getUser().getEmail());
-            dto.setAddress(entity.getPatient().getAddress());
         }
 
-        dto.setRequestType(entity.getRequestType());
+        dto.setAddress(entity.getAddress());
+        dto.setRequestType(entity.getRequestType().name()); // Преобразуем enum в строку
         dto.setSymptoms(entity.getSymptoms());
         dto.setAdditionalNotes(entity.getAdditionalNotes());
         dto.setPreferredDateTime(entity.getPreferredDateTime());
-        dto.setStatus(entity.getStatus());
+        dto.setStatus(entity.getStatus().name()); // Преобразуем enum в строку
 
         if (entity.getMedicalPerson() != null) {
-            dto.setAssignedStaffId(entity.getMedicalPerson().getId());
+            dto.setAssignedStaffId(entity.getMedicalPerson().getId().toString());
             dto.setAssignedStaffName(entity.getMedicalPerson().getUser().getFullName());
-            dto.setAssignedStaffEmail(entity.getMedicalPerson().getUser().getEmail());
         }
 
         if (entity.getAssignedBy() != null) {
-            dto.setAssignedByUserEmail(entity.getAssignedBy().getEmail());
+            dto.setAssignedBy(entity.getAssignedBy().getId().toString());
         }
 
         dto.setAssignedAt(entity.getAssignedAt());

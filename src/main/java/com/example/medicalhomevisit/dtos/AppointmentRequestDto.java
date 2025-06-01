@@ -1,45 +1,41 @@
 package com.example.medicalhomevisit.dtos;
 
-import com.example.medicalhomevisit.models.enums.RequestStatus;
-import com.example.medicalhomevisit.models.enums.RequestType;
 import java.util.Date;
-import java.util.UUID;
 
 public class AppointmentRequestDto {
-    private UUID id;
-    private UUID patientId; // Добавить
-    private String patientName; // Добавить
-    private String patientPhone; // Добавить
-    private String emailPatient;
+    private String id;
+    private String patientId;
+    private String patientName;
+    private String patientPhone;
+    private String requestType;
     private String address;
-    private RequestType requestType;
     private String symptoms;
     private String additionalNotes;
     private Date preferredDateTime;
-    private RequestStatus status;
-    private UUID assignedStaffId; // Добавить
-    private String assignedStaffName; // Добавить
-    private String assignedStaffEmail;
-    private String assignedByUserEmail;
+    private String status;
+    private String assignedStaffId;
+    private String assignedStaffName;
+    private String assignedBy;
     private Date assignedAt;
     private String assignmentNote;
     private String responseMessage;
-    private Date createdAt; // Добавить
-    private Date updatedAt; // Добавить
+    private Date createdAt;
+    private Date updatedAt;
 
-    public UUID getId() {
+    // Getters and setters
+    public String getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public UUID getPatientId() {
+    public String getPatientId() {
         return patientId;
     }
 
-    public void setPatientId(UUID patientId) {
+    public void setPatientId(String patientId) {
         this.patientId = patientId;
     }
 
@@ -59,14 +55,6 @@ public class AppointmentRequestDto {
         this.patientPhone = patientPhone;
     }
 
-    public String getEmailPatient() {
-        return emailPatient;
-    }
-
-    public void setEmailPatient(String emailPatient) {
-        this.emailPatient = emailPatient;
-    }
-
     public String getAddress() {
         return address;
     }
@@ -75,11 +63,11 @@ public class AppointmentRequestDto {
         this.address = address;
     }
 
-    public RequestType getRequestType() {
+    public String getRequestType() {
         return requestType;
     }
 
-    public void setRequestType(RequestType requestType) {
+    public void setRequestType(String requestType) {
         this.requestType = requestType;
     }
 
@@ -107,19 +95,19 @@ public class AppointmentRequestDto {
         this.preferredDateTime = preferredDateTime;
     }
 
-    public RequestStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(RequestStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
-    public UUID getAssignedStaffId() {
+    public String getAssignedStaffId() {
         return assignedStaffId;
     }
 
-    public void setAssignedStaffId(UUID assignedStaffId) {
+    public void setAssignedStaffId(String assignedStaffId) {
         this.assignedStaffId = assignedStaffId;
     }
 
@@ -131,20 +119,12 @@ public class AppointmentRequestDto {
         this.assignedStaffName = assignedStaffName;
     }
 
-    public String getAssignedStaffEmail() {
-        return assignedStaffEmail;
+    public String getAssignedBy() {
+        return assignedBy;
     }
 
-    public void setAssignedStaffEmail(String assignedStaffEmail) {
-        this.assignedStaffEmail = assignedStaffEmail;
-    }
-
-    public String getAssignedByUserEmail() {
-        return assignedByUserEmail;
-    }
-
-    public void setAssignedByUserEmail(String assignedByUserEmail) {
-        this.assignedByUserEmail = assignedByUserEmail;
+    public void setAssignedBy(String assignedBy) {
+        this.assignedBy = assignedBy;
     }
 
     public Date getAssignedAt() {

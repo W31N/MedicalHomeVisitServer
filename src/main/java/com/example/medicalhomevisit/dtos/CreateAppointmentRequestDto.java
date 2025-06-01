@@ -8,7 +8,7 @@ import java.util.Date;
 
 public class CreateAppointmentRequestDto {
 
-    private RequestType requestType;
+    private String  requestType;
     private String symptoms;
     private String additionalNotes;
     private Date preferredDateTime;
@@ -16,22 +16,25 @@ public class CreateAppointmentRequestDto {
 
 
     @NotNull
-    public RequestType getRequestType() { return requestType; }
-    public void setRequestType(RequestType requestType) { this.requestType = requestType; }
+    @NotBlank
+    public String getRequestType() { return requestType; }
+    public void setRequestType(String requestType) { this.requestType = requestType; }
+
     @NotBlank
     public String getSymptoms() { return symptoms; }
     public void setSymptoms(String symptoms) { this.symptoms = symptoms; }
 
+
     public Date getPreferredDateTime() {
         return preferredDateTime;
     }
-
     public void setPreferredDateTime(Date preferredDateTime) {
         this.preferredDateTime = preferredDateTime;
     }
 
     public String getAdditionalNotes() { return additionalNotes; }
     public void setAdditionalNotes(String additionalNotes) { this.additionalNotes = additionalNotes; }
+
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
 }
