@@ -133,7 +133,6 @@ public class AuthService {
         } else {
             dto.setRole(UserRole.PATIENT.name());
         }
-        dto.setEmailVerified(user.isActive());
         return dto;
     }
 }

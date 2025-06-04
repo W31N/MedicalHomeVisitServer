@@ -9,6 +9,8 @@ import com.example.medicalhomevisit.models.enums.VisitStatus;
 import com.example.medicalhomevisit.repositories.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class AppointmentRequestService {
 
+    private static final Logger log = LoggerFactory.getLogger(AppointmentRequestService.class);
+
     @Autowired
     private ModelMapper modelMapper;
     @Autowired
@@ -38,20 +42,36 @@ public class AppointmentRequestService {
     private VisitRepository visitRepository;
 
     public AppointmentRequestDto createRequestByPatient(CreateAppointmentRequestDto createDto) {
+        log.info("SERVICE: Attempting to create request by patient.");
+
         String currentUserEmail  = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        log.info("SERVICE: Current authenticated user email from SecurityContext: {}", currentUserEmail);
+
         UserEntity userEntity = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден: " + currentUserEmail));
+                .orElseThrow(() -> {
+                    log.error("SERVICE: User not found for email: {}", currentUserEmail);
+                    return new EntityNotFoundException("Пользователь не найден: " + currentUserEmail);
+                });
+        log.info("SERVICE: UserEntity found: ID={}, Email={}, Role={}", userEntity.getId(), userEntity.getEmail(), userEntity.getRole().getName());
 
         if (userEntity.getRole().getName() != UserRole.PATIENT) {
+            log.warn("SERVICE: Access denied for user {}. Only PATIENT can create requests.", currentUserEmail);
             throw new AccessDeniedException("Только пациенты могут создавать заявки");
         }
 
         Patient patient = patientRepository.findByUser(userEntity)
-                .orElseThrow(() -> new EntityNotFoundException("Профиль пациента не найден"));
+                .orElseThrow(() -> {
+                    log.error("SERVICE: Patient profile not found for User ID: {}", userEntity.getId());
+                    return new EntityNotFoundException("Профиль пациента не найден для пользователя: " + userEntity.getEmail());
+                });
+        log.info("SERVICE: Patient profile found: ID={}", patient.getId());
 
         AppointmentRequest request = new AppointmentRequest();
-
         request.setPatient(patient);
+
+        log.info("SERVICE: Assigning Patient ID {} to new request.", patient.getId());
+
         request.setAddress(createDto.getAddress());
 
         // Преобразуем строку в enum
@@ -59,6 +79,7 @@ public class AppointmentRequestService {
             RequestType requestType = RequestType.valueOf(createDto.getRequestType());
             request.setRequestType(requestType);
         } catch (IllegalArgumentException e) {
+            log.error("SERVICE: Invalid request type string: {}", createDto.getRequestType(), e);
             throw new IllegalArgumentException("Неверный тип заявки: " + createDto.getRequestType());
         }
 
@@ -70,6 +91,7 @@ public class AppointmentRequestService {
         request.setResponseMessage("");
 
         AppointmentRequest savedRequest = requestRepository.save(request);
+        log.info("SERVICE: Request created and saved with ID: {}", savedRequest.getId());
         return convertToDto(savedRequest);
     }
 
@@ -120,19 +142,39 @@ public class AppointmentRequestService {
     // Получение заявок текущего пациента
     @Transactional(readOnly = true)
     public List<AppointmentRequestDto> getMyRequests() {
+        log.info("SERVICE: getMyRequests() called."); // <-- ЛОГ: Начало метода
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("SERVICE: Current authenticated user email from SecurityContext: {}", currentUserEmail); // <-- ЛОГ: Email текущего пользователя
+
         UserEntity currentUser = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> {
+                    log.error("SERVICE: User not found for email (in getMyRequests): {}", currentUserEmail);
+                    return new EntityNotFoundException("Пользователь не найден: " + currentUserEmail);
+                });
+        log.info("SERVICE: UserEntity found for getMyRequests: ID={}, Email={}, Role={}", currentUser.getId(), currentUser.getEmail(), currentUser.getRole().getName()); // <-- ЛОГ: Найденный UserEntity
 
         if (currentUser.getRole().getName() != UserRole.PATIENT) {
+            log.warn("SERVICE: Access denied for user {} in getMyRequests. Only PATIENT can fetch their requests via this method.", currentUserEmail);
             throw new AccessDeniedException("Только пациенты могут получать свои заявки");
         }
 
         Patient patient = patientRepository.findByUser(currentUser)
-                .orElseThrow(() -> new EntityNotFoundException("Профиль пациента не найден"));
+                .orElseThrow(() -> {
+                    log.error("SERVICE: Patient profile not found for User ID {} (in getMyRequests)", currentUser.getId());
+                    return new EntityNotFoundException("Профиль пациента не найден для пользователя: " + currentUser.getEmail());
+                });
+        log.info("SERVICE: Patient profile found for getMyRequests: ID={}", patient.getId()); // <-- ЛОГ: Найденный Patient и его ID
 
-        return requestRepository.findByPatient_Id(patient.getId())
-                .stream().map(this::convertToDto).collect(Collectors.toList());
+        List<AppointmentRequest> requestsFromDb = requestRepository.findByPatient_Id(patient.getId());
+        log.info("SERVICE: Found {} requests in DB for Patient ID: {}", requestsFromDb.size(), patient.getId()); // <-- ЛОГ: Количество заявок из БД
+
+        List<AppointmentRequestDto> dtoList = requestsFromDb
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+        log.info("SERVICE: Returning {} DTOs for getMyRequests.", dtoList.size()); // <-- ЛОГ: Количество DTO после конвертации
+
+        return dtoList;
     }
 
 
@@ -285,37 +327,34 @@ public class AppointmentRequestService {
     }
 
     private AppointmentRequestDto convertToDto(AppointmentRequest entity) {
-        AppointmentRequestDto dto = new AppointmentRequestDto();
-        dto.setId(entity.getId().toString());
+        // Здесь нет необходимости в логировании, если только нет проблем с маппингом
+        AppointmentRequestDto dto = modelMapper.map(entity, AppointmentRequestDto.class);
 
+        // ModelMapper может не справиться с вложенными полями типа Patient.User.FullName, если не настроен TypeMap
+        // Ручное выставление некоторых полей после общего маппинга может быть надежнее или проще
         if (entity.getPatient() != null) {
             dto.setPatientId(entity.getPatient().getId().toString());
-            dto.setPatientName(entity.getPatient().getUser().getFullName());
-            dto.setPatientPhone(entity.getPatient().getPhoneNumber());
+            if (entity.getPatient().getUser() != null) {
+                dto.setPatientName(entity.getPatient().getUser().getFullName());
+            }
+            dto.setPatientPhone(entity.getPatient().getPhoneNumber()); // Убедись, что Patient имеет phoneNumber
         }
-
-        dto.setAddress(entity.getAddress());
-        dto.setRequestType(entity.getRequestType().name()); // Преобразуем enum в строку
-        dto.setSymptoms(entity.getSymptoms());
-        dto.setAdditionalNotes(entity.getAdditionalNotes());
-        dto.setPreferredDateTime(entity.getPreferredDateTime());
-        dto.setStatus(entity.getStatus().name()); // Преобразуем enum в строку
-
         if (entity.getMedicalPerson() != null) {
             dto.setAssignedStaffId(entity.getMedicalPerson().getId().toString());
-            dto.setAssignedStaffName(entity.getMedicalPerson().getUser().getFullName());
+            if (entity.getMedicalPerson().getUser() != null) {
+                dto.setAssignedStaffName(entity.getMedicalPerson().getUser().getFullName());
+            }
         }
-
         if (entity.getAssignedBy() != null) {
-            dto.setAssignedBy(entity.getAssignedBy().getId().toString());
+            dto.setAssignedBy(entity.getAssignedBy().getId().toString()); // ID админа, назначившего заявку
         }
-
-        dto.setAssignedAt(entity.getAssignedAt());
-        dto.setAssignmentNote(entity.getAssignmentNote());
-        dto.setResponseMessage(entity.getResponseMessage());
-        dto.setCreatedAt(entity.getCreatedAt());
-        dto.setUpdatedAt(entity.getUpdatedAt());
-
+        // Enum в строки, если ModelMapper не настроен
+        if (entity.getRequestType() != null) {
+            dto.setRequestType(entity.getRequestType().name());
+        }
+        if (entity.getStatus() != null) {
+            dto.setStatus(entity.getStatus().name());
+        }
         return dto;
     }
 }

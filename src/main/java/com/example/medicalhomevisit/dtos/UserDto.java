@@ -7,7 +7,6 @@ public class UserDto {
     private String email;
     private String displayName;
     private String role;
-    private boolean isEmailVerified;
 
     public UserDto() {}
 
@@ -42,13 +41,5 @@ public class UserDto {
 
     public void setRole(String role) {
         this.role = role;
-    }
-
-    public boolean isEmailVerified() {
-        return isEmailVerified;
-    }
-
-    public void setEmailVerified(boolean emailVerified) {
-        isEmailVerified = emailVerified;
     }
 }

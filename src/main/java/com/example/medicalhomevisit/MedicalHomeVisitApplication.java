@@ -15,8 +15,6 @@ public class MedicalHomeVisitApplication {
     @Bean
     public ModelMapper modelMapper() {
         ModelMapper modelMapper = new ModelMapper();
-        // Здесь можно добавить кастомные конфигурации маппинга, если нужно
-        // modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT); // Например, для строгого соответствия имен
         return modelMapper;
     }
 }
