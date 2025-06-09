@@ -12,8 +12,6 @@ import java.util.UUID;
 
 @Repository
 public interface AppointmentRequestRepository extends JpaRepository<AppointmentRequest, UUID> {
-    List<AppointmentRequest> findByPatient(Patient patient);
-    List<AppointmentRequest> findByMedicalPerson(MedicalPerson medicalPerson);
     List<AppointmentRequest> findByStatusIn(List<RequestStatus> status);
     List<AppointmentRequest> findByPatient_Id(UUID patientId);
 }

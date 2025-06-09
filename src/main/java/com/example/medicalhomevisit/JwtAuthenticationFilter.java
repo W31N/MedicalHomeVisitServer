@@ -18,10 +18,8 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
     private JwtTokenProvider tokenProvider;
 
-    @Autowired
     private UserDetailsService userDetailsService;
 
     @Override
@@ -47,5 +45,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    @Autowired
+    public void setTokenProvider(JwtTokenProvider tokenProvider) {
+        this.tokenProvider = tokenProvider;
+    }
+
+    @Autowired
+    public void setUserDetailsService(UserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
     }
 }

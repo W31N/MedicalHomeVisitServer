@@ -17,19 +17,18 @@ import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
-    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class); // Логгер
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
     @Value("${jwt.secret}")
-    private String jwtSecretString; // Переименовал для ясности, что это строка из properties
+    private String jwtSecretString;
 
     @Value("${jwt.expiration}")
-    private int jwtExpirationMs; // Предполагаем, что это в миллисекундах
+    private int jwtExpirationMs;
 
-    private SecretKey key; // <-- Поле для хранения объекта ключа
+    private SecretKey key;
 
-    @PostConstruct // Этот метод будет вызван после создания бина и внедрения зависимостей
+    @PostConstruct
     public void init() {
-        // Декодируем строку секрета из Base64URL и создаем объект SecretKey
         this.key = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(jwtSecretString));
     }
 
@@ -42,14 +41,13 @@ public class JwtTokenProvider {
                 .setSubject(userPrincipal.getUsername())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                // Используем объект Key и явно указываем алгоритм, хотя для HMAC он может быть выведен из ключа
-                .signWith(key, SignatureAlgorithm.HS512) // ИЛИ просто .signWith(key)
+                .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
 
     public String getUsernameFromToken(String token) {
-        Claims claims = Jwts.parserBuilder() // Используем parserBuilder для современного API
-                .setSigningKey(key)       // Используем объект Key
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -58,8 +56,8 @@ public class JwtTokenProvider {
 
     public boolean validateToken(String authToken) {
         try {
-            Jwts.parserBuilder()        // Используем parserBuilder
-                    .setSigningKey(key)   // Используем объект Key
+            Jwts.parserBuilder()
+                    .setSigningKey(key)
                     .build()
                     .parseClaimsJws(authToken);
             return true;

@@ -15,18 +15,16 @@ import java.util.List;
 @RequestMapping("/api/medical-person")
 public class MedicalPersonController {
 
-    private final MedicalPersonService medicalPersonService;
-
-    @Autowired
-    public MedicalPersonController(MedicalPersonService medicalPersonService) {
-        this.medicalPersonService = medicalPersonService;
-    }
+    private MedicalPersonService medicalPersonService;
 
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<List<MedicalPersonDto>> getActiveMedicalStaff() {
         List<MedicalPersonDto> medicalStaffList = medicalPersonService.getActiveMedicalStaff();
         return ResponseEntity.ok(medicalStaffList);
     }
 
+    @Autowired
+    public void setMedicalPersonService(MedicalPersonService medicalPersonService) {
+        this.medicalPersonService = medicalPersonService;
+    }
 }

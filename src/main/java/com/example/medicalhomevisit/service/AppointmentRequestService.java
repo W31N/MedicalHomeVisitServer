@@ -28,17 +28,11 @@ public class AppointmentRequestService {
 
     private static final Logger log = LoggerFactory.getLogger(AppointmentRequestService.class);
 
-    @Autowired
     private ModelMapper modelMapper;
-    @Autowired
     private AppointmentRequestRepository requestRepository;
-    @Autowired
     private PatientRepository patientRepository;
-    @Autowired
     private UserRepository userRepository;
-    @Autowired
     private MedicalPersonRepository medicalPersonRepository;
-    @Autowired
     private VisitRepository visitRepository;
 
     public AppointmentRequestDto createRequestByPatient(CreateAppointmentRequestDto createDto) {
@@ -74,7 +68,6 @@ public class AppointmentRequestService {
 
         request.setAddress(createDto.getAddress());
 
-        // Преобразуем строку в enum
         try {
             RequestType requestType = RequestType.valueOf(createDto.getRequestType());
             request.setRequestType(requestType);
@@ -107,7 +100,6 @@ public class AppointmentRequestService {
     }
 
 
-    // Получение заявок пациента
     @Transactional(readOnly = true)
     public List<AppointmentRequestDto> getRequestsForPatient(UUID patientId) {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -116,13 +108,11 @@ public class AppointmentRequestService {
 
         UserRole role = currentUser.getRole().getName();
 
-        // Админ и медработники могут видеть заявки любого пациента
-        if (role == UserRole.ADMIN || role == UserRole.MEDICAL_STAFF || role == UserRole.DISPATCHER) {
+        if (role == UserRole.ADMIN || role == UserRole.MEDICAL_STAFF) {
             return requestRepository.findByPatient_Id(patientId)
                     .stream().map(this::convertToDto).collect(Collectors.toList());
         }
 
-        // Пациент может видеть только свои заявки
         if (role == UserRole.PATIENT) {
             Patient currentPatient = patientRepository.findByUser(currentUser)
                     .orElseThrow(() -> new EntityNotFoundException("Профиль пациента не найден"));
@@ -139,19 +129,18 @@ public class AppointmentRequestService {
     }
 
 
-    // Получение заявок текущего пациента
     @Transactional(readOnly = true)
     public List<AppointmentRequestDto> getMyRequests() {
-        log.info("SERVICE: getMyRequests() called."); // <-- ЛОГ: Начало метода
+        log.info("SERVICE: getMyRequests() called.");
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.info("SERVICE: Current authenticated user email from SecurityContext: {}", currentUserEmail); // <-- ЛОГ: Email текущего пользователя
+        log.info("SERVICE: Current authenticated user email from SecurityContext: {}", currentUserEmail);
 
         UserEntity currentUser = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> {
                     log.error("SERVICE: User not found for email (in getMyRequests): {}", currentUserEmail);
                     return new EntityNotFoundException("Пользователь не найден: " + currentUserEmail);
                 });
-        log.info("SERVICE: UserEntity found for getMyRequests: ID={}, Email={}, Role={}", currentUser.getId(), currentUser.getEmail(), currentUser.getRole().getName()); // <-- ЛОГ: Найденный UserEntity
+        log.info("SERVICE: UserEntity found for getMyRequests: ID={}, Email={}, Role={}", currentUser.getId(), currentUser.getEmail(), currentUser.getRole().getName());
 
         if (currentUser.getRole().getName() != UserRole.PATIENT) {
             log.warn("SERVICE: Access denied for user {} in getMyRequests. Only PATIENT can fetch their requests via this method.", currentUserEmail);
@@ -163,22 +152,21 @@ public class AppointmentRequestService {
                     log.error("SERVICE: Patient profile not found for User ID {} (in getMyRequests)", currentUser.getId());
                     return new EntityNotFoundException("Профиль пациента не найден для пользователя: " + currentUser.getEmail());
                 });
-        log.info("SERVICE: Patient profile found for getMyRequests: ID={}", patient.getId()); // <-- ЛОГ: Найденный Patient и его ID
+        log.info("SERVICE: Patient profile found for getMyRequests: ID={}", patient.getId());
 
         List<AppointmentRequest> requestsFromDb = requestRepository.findByPatient_Id(patient.getId());
-        log.info("SERVICE: Found {} requests in DB for Patient ID: {}", requestsFromDb.size(), patient.getId()); // <-- ЛОГ: Количество заявок из БД
+        log.info("SERVICE: Found {} requests in DB for Patient ID: {}", requestsFromDb.size(), patient.getId());
 
         List<AppointmentRequestDto> dtoList = requestsFromDb
                 .stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
-        log.info("SERVICE: Returning {} DTOs for getMyRequests.", dtoList.size()); // <-- ЛОГ: Количество DTO после конвертации
+        log.info("SERVICE: Returning {} DTOs for getMyRequests.", dtoList.size());
 
         return dtoList;
     }
 
 
-    // Получение всех активных заявок (для админа/диспетчера)
     @Transactional(readOnly = true)
     public List<AppointmentRequestDto> getAllActiveRequests() {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -186,7 +174,7 @@ public class AppointmentRequestService {
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
 
         UserRole role = currentUser.getRole().getName();
-        if (role != UserRole.ADMIN && role != UserRole.DISPATCHER) {
+        if (role != UserRole.ADMIN) {
             throw new AccessDeniedException("Только администратор или диспетчер могут просматривать все заявки");
         }
 
@@ -200,14 +188,13 @@ public class AppointmentRequestService {
     }
 
 
-    // Назначение медработника на заявку
     public AppointmentRequestDto assignStaffToRequest(UUID requestId, AssignStaffToRequestDto assignDto) {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity currentUser = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
 
         UserRole role = currentUser.getRole().getName();
-        if (role != UserRole.ADMIN && role != UserRole.DISPATCHER) {
+        if (role != UserRole.ADMIN) {
             throw new AccessDeniedException("Только администратор или диспетчер могут назначать медработников");
         }
 
@@ -225,10 +212,8 @@ public class AppointmentRequestService {
 
         AppointmentRequest updatedRequest = requestRepository.save(request);
 
-        // Автоматически создаем визит
         createVisitFromRequest(updatedRequest);
 
-        // Обновляем статус на SCHEDULED
         request.setStatus(RequestStatus.SCHEDULED);
         updatedRequest = requestRepository.save(request);
 
@@ -236,19 +221,16 @@ public class AppointmentRequestService {
     }
 
 
-    // Обновление статуса заявки
     public AppointmentRequestDto updateRequestStatus(UUID requestId, UpdateRequestStatusDto statusDto) {
         AppointmentRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new EntityNotFoundException("Заявка не найдена: " + requestId));
 
-        // Проверка прав на изменение статуса
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity currentUser = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
 
         UserRole role = currentUser.getRole().getName();
 
-        // Пациент может только отменить свою заявку
         if (role == UserRole.PATIENT) {
             Patient patient = patientRepository.findByUser(currentUser)
                     .orElseThrow(() -> new EntityNotFoundException("Профиль пациента не найден"));
@@ -275,8 +257,6 @@ public class AppointmentRequestService {
         return convertToDto(updatedRequest);
     }
 
-
-    // Отмена заявки пациентом
     public AppointmentRequestDto cancelRequest(UUID requestId, String reason) {
         UpdateRequestStatusDto statusDto = new UpdateRequestStatusDto();
         statusDto.setStatus(RequestStatus.CANCELLED);
@@ -302,7 +282,7 @@ public class AppointmentRequestService {
 
         UserRole role = currentUser.getRole().getName();
 
-        if (role == UserRole.ADMIN || role == UserRole.DISPATCHER) {
+        if (role == UserRole.ADMIN) {
             return;
         }
 
@@ -327,17 +307,13 @@ public class AppointmentRequestService {
     }
 
     private AppointmentRequestDto convertToDto(AppointmentRequest entity) {
-        // Здесь нет необходимости в логировании, если только нет проблем с маппингом
         AppointmentRequestDto dto = modelMapper.map(entity, AppointmentRequestDto.class);
-
-        // ModelMapper может не справиться с вложенными полями типа Patient.User.FullName, если не настроен TypeMap
-        // Ручное выставление некоторых полей после общего маппинга может быть надежнее или проще
         if (entity.getPatient() != null) {
             dto.setPatientId(entity.getPatient().getId().toString());
             if (entity.getPatient().getUser() != null) {
                 dto.setPatientName(entity.getPatient().getUser().getFullName());
             }
-            dto.setPatientPhone(entity.getPatient().getPhoneNumber()); // Убедись, что Patient имеет phoneNumber
+            dto.setPatientPhone(entity.getPatient().getPhoneNumber());
         }
         if (entity.getMedicalPerson() != null) {
             dto.setAssignedStaffId(entity.getMedicalPerson().getId().toString());
@@ -346,9 +322,8 @@ public class AppointmentRequestService {
             }
         }
         if (entity.getAssignedBy() != null) {
-            dto.setAssignedBy(entity.getAssignedBy().getId().toString()); // ID админа, назначившего заявку
+            dto.setAssignedBy(entity.getAssignedBy().getId().toString());
         }
-        // Enum в строки, если ModelMapper не настроен
         if (entity.getRequestType() != null) {
             dto.setRequestType(entity.getRequestType().name());
         }
@@ -356,5 +331,35 @@ public class AppointmentRequestService {
             dto.setStatus(entity.getStatus().name());
         }
         return dto;
+    }
+
+    @Autowired
+    public void setModelMapper(ModelMapper modelMapper) {
+        this.modelMapper = modelMapper;
+    }
+
+    @Autowired
+    public void setRequestRepository(AppointmentRequestRepository requestRepository) {
+        this.requestRepository = requestRepository;
+    }
+
+    @Autowired
+    public void setPatientRepository(PatientRepository patientRepository) {
+        this.patientRepository = patientRepository;
+    }
+
+    @Autowired
+    public void setUserRepository(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Autowired
+    public void setMedicalPersonRepository(MedicalPersonRepository medicalPersonRepository) {
+        this.medicalPersonRepository = medicalPersonRepository;
+    }
+
+    @Autowired
+    public void setVisitRepository(VisitRepository visitRepository) {
+        this.visitRepository = visitRepository;
     }
 }

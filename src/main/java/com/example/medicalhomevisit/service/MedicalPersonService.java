@@ -18,15 +18,9 @@ import java.util.stream.Collectors;
 @Service
 public class MedicalPersonService {
     private static final Logger log = LoggerFactory.getLogger(MedicalPersonService.class);
-    private final MedicalPersonRepository medicalPersonRepository;
-    private final ModelMapper modelMapper;
 
-    @Autowired
-    public MedicalPersonService(MedicalPersonRepository medicalPersonRepository, ModelMapper modelMapper) {
-        this.medicalPersonRepository = medicalPersonRepository;
-        // this.userRepository = userRepository;
-        this.modelMapper = modelMapper;
-    }
+    private MedicalPersonRepository medicalPersonRepository;
+    private ModelMapper modelMapper;
 
     @Transactional(readOnly = true)
     public List<MedicalPersonDto> getActiveMedicalStaff() {
@@ -51,5 +45,15 @@ public class MedicalPersonService {
                 userEntity.getFullName(),
                 medicalPersonEntity.getSpecialization()
         );
+    }
+
+    @Autowired
+    public void setMedicalPersonRepository(MedicalPersonRepository medicalPersonRepository) {
+        this.medicalPersonRepository = medicalPersonRepository;
+    }
+
+    @Autowired
+    public void setModelMapper(ModelMapper modelMapper) {
+        this.modelMapper = modelMapper;
     }
 }

@@ -8,9 +8,7 @@ public class AssignStaffToRequestDto {
     @NotNull
     private UUID staffId;
     private String assignmentNote;
-    // Можно добавить сюда preferredDate/Time, если админ их уточняет при назначении
 
-    // Геттеры и сеттеры
     public UUID getStaffId() { return staffId; }
     public void setStaffId(UUID staffId) { this.staffId = staffId; }
     public String getAssignmentNote() { return assignmentNote; }

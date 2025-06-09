@@ -5,11 +5,12 @@ import java.util.Map;
 import java.util.UUID;
 
 public class VisitProtocolDto {
+
     private UUID id;
     private UUID visitId;
     private UUID templateId;
     private String complaints;
-        private String anamnesis;
+    private String anamnesis;
     private String objectiveStatus;
     private String diagnosis;
     private String diagnosisCode;

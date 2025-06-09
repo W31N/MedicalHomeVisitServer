@@ -3,8 +3,8 @@ package com.example.medicalhomevisit.dtos;
 import java.util.UUID;
 
 public class MedicalPersonDto {
-    private UUID medicalPersonId; // ID сущности MedicalPerson - это то, что пойдет в AssignStaffToRequestDto
-    private UUID userId;          // ID связанной сущности UserEntity (для информации)
+    private UUID medicalPersonId;
+    private UUID userId;
     private String fullName;
     private String specialization;
 

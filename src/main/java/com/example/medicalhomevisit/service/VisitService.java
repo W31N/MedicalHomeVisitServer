@@ -29,25 +29,16 @@ public class VisitService {
 
     private static final Logger log = LoggerFactory.getLogger(VisitService.class);
 
-    @Autowired
     private ModelMapper modelMapper;
-    @Autowired
     private VisitRepository visitRepository;
-    @Autowired
     private UserRepository userRepository;
-    @Autowired
     private MedicalPersonRepository medicalPersonRepository;
-    @Autowired
     private PatientRepository patientRepository;
 
-    /**
-     * Получить все визиты для конкретного медработника
-     */
     @Transactional(readOnly = true)
     public List<VisitDto> getVisitsForMedicalStaff(UUID staffId) {
         log.info("SERVICE: Getting visits for medical staff ID: {}", staffId);
 
-        // Проверяем права доступа
         checkAccessToStaffVisits(staffId);
 
         MedicalPerson medicalPerson = medicalPersonRepository.findById(staffId)
@@ -61,9 +52,6 @@ public class VisitService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Получить визиты для текущего авторизованного медработника
-     */
     @Transactional(readOnly = true)
     public List<VisitDto> getMyVisits() {
         log.info("SERVICE: Getting visits for current medical staff");
@@ -87,9 +75,6 @@ public class VisitService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Получить визиты на конкретную дату для медработника
-     */
     @Transactional(readOnly = true)
     public List<VisitDto> getVisitsForDate(LocalDate date, UUID staffId) {
         log.info("SERVICE: Getting visits for date {} and staff ID: {}", date, staffId);
@@ -99,7 +84,6 @@ public class VisitService {
         MedicalPerson medicalPerson = medicalPersonRepository.findById(staffId)
                 .orElseThrow(() -> new EntityNotFoundException("Медработник не найден: " + staffId));
 
-        // Преобразуем LocalDate в начало и конец дня
         Date startOfDay = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
         Calendar cal = Calendar.getInstance();
         cal.setTime(startOfDay);
@@ -123,9 +107,6 @@ public class VisitService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Получить визиты на сегодня для текущего медработника
-     */
     @Transactional(readOnly = true)
     public List<VisitDto> getMyVisitsForToday() {
         log.info("SERVICE: Getting today's visits for current medical staff");
@@ -144,9 +125,6 @@ public class VisitService {
         return getVisitsForDate(LocalDate.now(), medicalPerson.getId());
     }
 
-    /**
-     * Получить визит по ID
-     */
     @Transactional(readOnly = true)
     public VisitDto getVisitById(UUID visitId) {
         log.info("SERVICE: Getting visit by ID: {}", visitId);
@@ -159,9 +137,6 @@ public class VisitService {
         return convertToDto(visit);
     }
 
-    /**
-     * Обновить статус визита
-     */
     public VisitDto updateVisitStatus(UUID visitId, VisitStatus newStatus) {
         log.info("SERVICE: Updating visit {} status to {}", visitId, newStatus);
 
@@ -172,7 +147,6 @@ public class VisitService {
 
         visit.setStatus(newStatus);
 
-        // Автоматически устанавливаем время начала/окончания
         if (newStatus == VisitStatus.IN_PROGRESS && visit.getActualStartTime() == null) {
             visit.setActualStartTime(new Date());
         } else if (newStatus == VisitStatus.COMPLETED && visit.getActualEndTime() == null) {
@@ -185,9 +159,6 @@ public class VisitService {
         return convertToDto(updatedVisit);
     }
 
-    /**
-     * Обновить заметки к визиту
-     */
     public VisitDto updateVisitNotes(UUID visitId, String notes) {
         log.info("SERVICE: Updating visit {} notes", visitId);
 
@@ -203,9 +174,6 @@ public class VisitService {
         return convertToDto(updatedVisit);
     }
 
-    /**
-     * Обновить запланированное время визита
-     */
     public VisitDto updateScheduledTime(UUID visitId, Date scheduledTime) {
         log.info("SERVICE: Updating visit {} scheduled time to {}", visitId, scheduledTime);
 
@@ -221,9 +189,6 @@ public class VisitService {
         return convertToDto(updatedVisit);
     }
 
-    /**
-     * Начать визит (установить статус IN_PROGRESS и время начала)
-     */
     public VisitDto startVisit(UUID visitId) {
         log.info("SERVICE: Starting visit {}", visitId);
 
@@ -245,9 +210,6 @@ public class VisitService {
         return convertToDto(updatedVisit);
     }
 
-    /**
-     * Завершить визит (установить статус COMPLETED и время окончания)
-     */
     public VisitDto completeVisit(UUID visitId) {
         log.info("SERVICE: Completing visit {}", visitId);
 
@@ -269,9 +231,6 @@ public class VisitService {
         return convertToDto(updatedVisit);
     }
 
-    /**
-     * Проверка прав доступа к визитам конкретного медработника
-     */
     private void checkAccessToStaffVisits(UUID staffId) {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity currentUser = userRepository.findByEmail(currentUserEmail)
@@ -279,12 +238,10 @@ public class VisitService {
 
         UserRole role = currentUser.getRole().getName();
 
-        // Админ и диспетчер могут видеть визиты любого медработника
-        if (role == UserRole.ADMIN || role == UserRole.DISPATCHER) {
+        if (role == UserRole.ADMIN) {
             return;
         }
 
-        // Медработник может видеть только свои визиты
         if (role == UserRole.MEDICAL_STAFF) {
             MedicalPerson medicalPerson = medicalPersonRepository.findByUser(currentUser)
                     .orElseThrow(() -> new EntityNotFoundException("Профиль медработника не найден"));
@@ -298,9 +255,6 @@ public class VisitService {
         throw new AccessDeniedException("У вас нет прав для просмотра визитов");
     }
 
-    /**
-     * Проверка прав доступа к конкретному визиту
-     */
     private void checkAccessToVisit(Visit visit) {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity currentUser = userRepository.findByEmail(currentUserEmail)
@@ -308,12 +262,10 @@ public class VisitService {
 
         UserRole role = currentUser.getRole().getName();
 
-        // Админ и диспетчер могут видеть любые визиты
-        if (role == UserRole.ADMIN || role == UserRole.DISPATCHER) {
+        if (role == UserRole.ADMIN) {
             return;
         }
 
-        // Медработник может видеть только свои визиты
         if (role == UserRole.MEDICAL_STAFF) {
             MedicalPerson medicalPerson = medicalPersonRepository.findByUser(currentUser)
                     .orElse(null);
@@ -324,7 +276,6 @@ public class VisitService {
             }
         }
 
-        // Пациент может видеть свои визиты
         if (role == UserRole.PATIENT) {
             Patient patient = patientRepository.findByUser(currentUser)
                     .orElse(null);
@@ -337,9 +288,6 @@ public class VisitService {
         throw new AccessDeniedException("У вас нет доступа к этому визиту");
     }
 
-    /**
-     * Конвертация Entity в DTO
-     */
     private VisitDto convertToDto(Visit entity) {
         VisitDto dto = new VisitDto();
 
@@ -352,13 +300,11 @@ public class VisitService {
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
 
-        // Данные из связанной заявки
         AppointmentRequest request = entity.getAppointmentRequest();
         if (request != null) {
             dto.setAddress(request.getAddress());
-            dto.setReasonForVisit(request.getSymptoms()); // symptoms становится reasonForVisit
+            dto.setReasonForVisit(request.getSymptoms());
 
-            // Данные пациента
             if (request.getPatient() != null) {
                 dto.setPatientId(request.getPatient().getId());
                 if (request.getPatient().getUser() != null) {
@@ -366,7 +312,6 @@ public class VisitService {
                 }
             }
 
-            // Данные медработника
             if (request.getMedicalPerson() != null) {
                 dto.setAssignedStaffId(request.getMedicalPerson().getId());
                 if (request.getMedicalPerson().getUser() != null) {
@@ -374,7 +319,31 @@ public class VisitService {
                 }
             }
         }
-
         return dto;
+    }
+
+    @Autowired
+    public void setModelMapper(ModelMapper modelMapper) {
+        this.modelMapper = modelMapper;
+    }
+
+    @Autowired
+    public void setVisitRepository(VisitRepository visitRepository) {
+        this.visitRepository = visitRepository;
+    }
+
+    @Autowired
+    public void setUserRepository(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Autowired
+    public void setMedicalPersonRepository(MedicalPersonRepository medicalPersonRepository) {
+        this.medicalPersonRepository = medicalPersonRepository;
+    }
+
+    @Autowired
+    public void setPatientRepository(PatientRepository patientRepository) {
+        this.patientRepository = patientRepository;
     }
 }

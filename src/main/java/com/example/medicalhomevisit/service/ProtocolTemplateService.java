@@ -24,15 +24,9 @@ public class ProtocolTemplateService {
 
     private static final Logger log = LoggerFactory.getLogger(ProtocolTemplateService.class);
 
-    @Autowired
     private ProtocolTemplateRepository protocolTemplateRepository;
-
-    @Autowired
     private UserRepository userRepository;
 
-    /**
-     * Получить все шаблоны протоколов
-     */
     @Transactional(readOnly = true)
     public List<ProtocolTemplateDto> getAllTemplates() {
         log.info("SERVICE: Getting all protocol templates");
@@ -45,9 +39,6 @@ public class ProtocolTemplateService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Получить шаблон по ID
-     */
     @Transactional(readOnly = true)
     public ProtocolTemplateDto getTemplateById(UUID templateId) {
         log.info("SERVICE: Getting protocol template by ID: {}", templateId);
@@ -59,21 +50,15 @@ public class ProtocolTemplateService {
         return convertToDto(template);
     }
 
-    /**
-     * Создать новый шаблон
-     */
     public ProtocolTemplateDto createTemplate(ProtocolTemplateDto templateDto) {
         log.info("SERVICE: Creating new protocol template: {}", templateDto.getName());
 
-        // Проверяем права доступа
         checkAdminAccess();
 
-        // Проверяем уникальность имени
         if (protocolTemplateRepository.existsByNameIgnoreCase(templateDto.getName())) {
             throw new IllegalArgumentException("Шаблон с таким именем уже существует: " + templateDto.getName());
         }
 
-        // Валидация
         validateTemplate(templateDto);
 
         ProtocolTemplate template = new ProtocolTemplate();
@@ -85,24 +70,18 @@ public class ProtocolTemplateService {
         return convertToDto(savedTemplate);
     }
 
-    /**
-     * Обновить существующий шаблон
-     */
     public ProtocolTemplateDto updateTemplate(UUID templateId, ProtocolTemplateDto templateDto) {
         log.info("SERVICE: Updating protocol template ID: {}", templateId);
 
-        // Проверяем права доступа
         checkAdminAccess();
 
         ProtocolTemplate existingTemplate = protocolTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new EntityNotFoundException("Шаблон протокола не найден: " + templateId));
 
-        // Проверяем уникальность имени (исключая текущий шаблон)
         if (protocolTemplateRepository.existsByNameIgnoreCaseAndIdNot(templateDto.getName(), templateId)) {
             throw new IllegalArgumentException("Шаблон с таким именем уже существует: " + templateDto.getName());
         }
 
-        // Валидация
         validateTemplate(templateDto);
 
         updateTemplateFromDto(existingTemplate, templateDto);
@@ -113,19 +92,14 @@ public class ProtocolTemplateService {
         return convertToDto(updatedTemplate);
     }
 
-    /**
-     * Удалить шаблон
-     */
     public void deleteTemplate(UUID templateId) {
         log.info("SERVICE: Deleting protocol template ID: {}", templateId);
 
-        // Проверяем права доступа
         checkAdminAccess();
 
         ProtocolTemplate template = protocolTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new EntityNotFoundException("Шаблон протокола не найден: " + templateId));
 
-        // Проверяем, не используется ли шаблон в протоколах
         if (!template.getVisitProtocols().isEmpty()) {
             throw new IllegalStateException("Нельзя удалить шаблон, который используется в протоколах визитов");
         }
@@ -134,9 +108,6 @@ public class ProtocolTemplateService {
         log.info("SERVICE: Protocol template deleted successfully: {}", template.getName());
     }
 
-    /**
-     * Поиск шаблонов по ключевому слову
-     */
     @Transactional(readOnly = true)
     public List<ProtocolTemplateDto> searchTemplates(String searchTerm) {
         log.info("SERVICE: Searching protocol templates with term: {}", searchTerm);
@@ -155,22 +126,8 @@ public class ProtocolTemplateService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Получить шаблон по имени
-     */
-    @Transactional(readOnly = true)
-    public ProtocolTemplateDto getTemplateByName(String name) {
-        log.info("SERVICE: Getting protocol template by name: {}", name);
 
-        ProtocolTemplate template = protocolTemplateRepository.findByName(name)
-                .orElseThrow(() -> new EntityNotFoundException("Шаблон протокола не найден: " + name));
 
-        return convertToDto(template);
-    }
-
-    /**
-     * Проверка прав доступа администратора
-     */
     private void checkAdminAccess() {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         var currentUser = userRepository.findByEmail(currentUserEmail)
@@ -178,14 +135,11 @@ public class ProtocolTemplateService {
 
         UserRole role = currentUser.getRole().getName();
 
-        if (role != UserRole.ADMIN && role != UserRole.DISPATCHER) {
+        if (role != UserRole.ADMIN) {
             throw new AccessDeniedException("Доступ к управлению шаблонами протоколов разрешен только администраторам");
         }
     }
 
-    /**
-     * Валидация шаблона
-     */
     private void validateTemplate(ProtocolTemplateDto templateDto) {
         if (templateDto.getName() == null || templateDto.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Название шаблона не может быть пустым");
@@ -194,13 +148,8 @@ public class ProtocolTemplateService {
         if (templateDto.getName().length() > 255) {
             throw new IllegalArgumentException("Название шаблона не может быть длиннее 255 символов");
         }
-
-        // Дополнительные проверки можно добавить здесь
     }
 
-    /**
-     * Обновление сущности из DTO
-     */
     private void updateTemplateFromDto(ProtocolTemplate template, ProtocolTemplateDto dto) {
         template.setName(dto.getName().trim());
         template.setDescription(dto.getDescription());
@@ -211,9 +160,6 @@ public class ProtocolTemplateService {
         template.setRequiredVitals(dto.getRequiredVitals());
     }
 
-    /**
-     * Конвертация Entity в DTO
-     */
     private ProtocolTemplateDto convertToDto(ProtocolTemplate entity) {
         ProtocolTemplateDto dto = new ProtocolTemplateDto();
 
@@ -229,5 +175,15 @@ public class ProtocolTemplateService {
         dto.setUpdatedAt(entity.getUpdatedAt());
 
         return dto;
+    }
+
+    @Autowired
+    public void setProtocolTemplateRepository(ProtocolTemplateRepository protocolTemplateRepository) {
+        this.protocolTemplateRepository = protocolTemplateRepository;
+    }
+
+    @Autowired
+    public void setUserRepository(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 }

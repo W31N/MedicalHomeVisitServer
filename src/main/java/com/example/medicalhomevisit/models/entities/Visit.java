@@ -20,7 +20,7 @@ public class Visit extends BaseEntity {
     public Visit() {
     }
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false) // Визит всегда связан с заявкой
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "appointment_request_id", nullable = false, unique = true)
     public AppointmentRequest getAppointmentRequest() {
         return appointmentRequest;

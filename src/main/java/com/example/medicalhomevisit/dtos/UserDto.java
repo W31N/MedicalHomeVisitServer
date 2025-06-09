@@ -11,7 +11,6 @@ public class UserDto {
 
     public UserDto() {}
 
-    // Getters and Setters
     public UUID getId() {
         return id;
     }

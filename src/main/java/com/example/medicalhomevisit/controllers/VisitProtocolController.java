@@ -20,16 +20,10 @@ public class VisitProtocolController {
 
     private static final Logger log = LoggerFactory.getLogger(VisitProtocolController.class);
 
-    @Autowired
     private VisitProtocolService visitProtocolService;
 
-    @Autowired
     private ProtocolTemplateService protocolTemplateService;
 
-    /**
-     * Получить протокол для визита
-     * GET /api/protocols/visit/{visitId}
-     */
     @GetMapping("/visit/{visitId}")
     public ResponseEntity<VisitProtocolDto> getProtocolForVisit(@PathVariable UUID visitId) {
         log.info("API: GET /api/protocols/visit/{} - Getting protocol for visit", visitId);
@@ -45,11 +39,6 @@ public class VisitProtocolController {
         return ResponseEntity.ok(protocol);
     }
 
-    /**
-     * Сохранить протокол (создать или обновить)
-     * POST /api/protocols
-     * PUT /api/protocols
-     */
     @PostMapping
     public ResponseEntity<VisitProtocolDto> createProtocol(@RequestBody VisitProtocolDto protocolDto) {
         log.info("API: POST /api/protocols - Creating protocol for visit {}", protocolDto.getVisitId());
@@ -80,18 +69,13 @@ public class VisitProtocolController {
         return ResponseEntity.ok(savedProtocol);
     }
 
-    /**
-     * Сохранить протокол для конкретного визита
-     * POST /api/protocols/visit/{visitId}
-     * PUT /api/protocols/visit/{visitId}
-     */
     @PostMapping("/visit/{visitId}")
     public ResponseEntity<VisitProtocolDto> createProtocolForVisit(
             @PathVariable UUID visitId,
             @RequestBody VisitProtocolDto protocolDto) {
         log.info("API: POST /api/protocols/visit/{} - Creating protocol", visitId);
 
-        protocolDto.setVisitId(visitId); // Устанавливаем visitId из пути
+        protocolDto.setVisitId(visitId);
 
         VisitProtocolDto savedProtocol = visitProtocolService.saveProtocol(protocolDto);
         log.info("API: Protocol created successfully for visit {}", visitId);
@@ -105,7 +89,7 @@ public class VisitProtocolController {
             @RequestBody VisitProtocolDto protocolDto) {
         log.info("API: PUT /api/protocols/visit/{} - Updating protocol", visitId);
 
-        protocolDto.setVisitId(visitId); // Устанавливаем visitId из пути
+        protocolDto.setVisitId(visitId);
 
         VisitProtocolDto savedProtocol = visitProtocolService.saveProtocol(protocolDto);
         log.info("API: Protocol updated successfully for visit {}", visitId);
@@ -113,11 +97,6 @@ public class VisitProtocolController {
         return ResponseEntity.ok(savedProtocol);
     }
 
-    /**
-     * Применить шаблон к протоколу
-     * POST /api/protocols/visit/{visitId}/apply-template
-     * Body: {"templateId": "uuid"}
-     */
     @PostMapping("/visit/{visitId}/apply-template")
     public ResponseEntity<VisitProtocolDto> applyTemplate(
             @PathVariable UUID visitId,
@@ -141,10 +120,6 @@ public class VisitProtocolController {
         }
     }
 
-    /**
-     * Удалить протокол
-     * DELETE /api/protocols/visit/{visitId}
-     */
     @DeleteMapping("/visit/{visitId}")
     public ResponseEntity<Void> deleteProtocol(@PathVariable UUID visitId) {
         log.info("API: DELETE /api/protocols/visit/{} - Deleting protocol", visitId);
@@ -155,11 +130,6 @@ public class VisitProtocolController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Частичное обновление полей протокола
-     * PATCH /api/protocols/visit/{visitId}/field
-     * Body: {"field": "complaints", "value": "новое значение"}
-     */
     @PatchMapping("/visit/{visitId}/field")
     public ResponseEntity<VisitProtocolDto> updateProtocolField(
             @PathVariable UUID visitId,
@@ -174,14 +144,12 @@ public class VisitProtocolController {
             return ResponseEntity.badRequest().build();
         }
 
-        // Получаем существующий протокол или создаем новый
         VisitProtocolDto protocol = visitProtocolService.getProtocolForVisit(visitId);
         if (protocol == null) {
             protocol = new VisitProtocolDto();
             protocol.setVisitId(visitId);
         }
 
-        // Обновляем нужное поле
         switch (field.toLowerCase()) {
             case "complaints":
                 protocol.setComplaints(value != null ? value : "");
@@ -211,26 +179,18 @@ public class VisitProtocolController {
 
         return ResponseEntity.ok(updatedProtocol);
     }
-
-    /**
-     * Обновление витальных показателей
-     * PATCH /api/protocols/visit/{visitId}/vitals
-     * Body: {"temperature": 36.6, "systolicBP": 120, "diastolicBP": 80, "pulse": 75}
-     */
     @PatchMapping("/visit/{visitId}/vitals")
     public ResponseEntity<VisitProtocolDto> updateVitals(
             @PathVariable UUID visitId,
             @RequestBody Map<String, Object> vitalsUpdate) {
         log.info("API: PATCH /api/protocols/visit/{}/vitals - Updating vitals", visitId);
 
-        // Получаем существующий протокол или создаем новый
         VisitProtocolDto protocol = visitProtocolService.getProtocolForVisit(visitId);
         if (protocol == null) {
             protocol = new VisitProtocolDto();
             protocol.setVisitId(visitId);
         }
 
-        // Обновляем витальные показатели
         if (vitalsUpdate.containsKey("temperature")) {
             Object temp = vitalsUpdate.get("temperature");
             protocol.setTemperature(temp != null ? ((Number) temp).floatValue() : null);
@@ -257,11 +217,6 @@ public class VisitProtocolController {
         return ResponseEntity.ok(updatedProtocol);
     }
 
-    /**
-     * Получить все шаблоны протоколов
-     * GET /api/protocol-templates
-     * (Дублирует endpoint из ProtocolTemplateController для совместимости с мобилкой)
-     */
     @GetMapping("/templates")
     public ResponseEntity<List<ProtocolTemplateDto>> getProtocolTemplates() {
         log.info("API: GET /api/protocols/templates - Getting all protocol templates");
@@ -272,11 +227,6 @@ public class VisitProtocolController {
         return ResponseEntity.ok(templates);
     }
 
-    /**
-     * Получить шаблон протокола по ID
-     * GET /api/protocols/templates/{templateId}
-     * (Дублирует endpoint из ProtocolTemplateController для совместимости с мобилкой)
-     */
     @GetMapping("/templates/{templateId}")
     public ResponseEntity<ProtocolTemplateDto> getProtocolTemplateById(@PathVariable UUID templateId) {
         log.info("API: GET /api/protocols/templates/{} - Getting protocol template", templateId);
@@ -291,10 +241,6 @@ public class VisitProtocolController {
         }
     }
 
-    /**
-     * Поиск шаблонов протоколов
-     * GET /api/protocols/templates/search?q={searchTerm}
-     */
     @GetMapping("/templates/search")
     public ResponseEntity<List<ProtocolTemplateDto>> searchProtocolTemplates(
             @RequestParam(value = "q", required = false) String searchTerm) {
@@ -304,5 +250,15 @@ public class VisitProtocolController {
         log.info("API: Found {} templates matching search criteria", templates.size());
 
         return ResponseEntity.ok(templates);
+    }
+
+    @Autowired
+    public void setVisitProtocolService(VisitProtocolService visitProtocolService) {
+        this.visitProtocolService = visitProtocolService;
+    }
+
+    @Autowired
+    public void setProtocolTemplateService(ProtocolTemplateService protocolTemplateService) {
+        this.protocolTemplateService = protocolTemplateService;
     }
 }

@@ -4,6 +4,7 @@ import com.example.medicalhomevisit.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -47,8 +48,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/secure/hello").authenticated()
                         .requestMatchers("/api/secure/patient-only").hasRole("PATIENT")
                         .requestMatchers("/api/secure/admin-only").hasRole("ADMIN")
-                        .requestMatchers("/api/visits/**").hasAnyRole("MEDICAL_STAFF", "DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/appointment-requests/**").authenticated()
+                        .requestMatchers("/api/visits/**").hasAnyRole("MEDICAL_STAFF", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/medical-person/active").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/appointment-requests").hasRole("PATIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/appointment-requests/my").hasRole("PATIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/appointment-requests/active").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/appointment-requests/*/assign").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/appointment-requests/*/cancel").hasRole("PATIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/appointment-requests/*").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/appointment-requests/patient/*").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/appointment-requests/*/status").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

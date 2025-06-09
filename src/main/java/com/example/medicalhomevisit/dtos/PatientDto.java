@@ -18,7 +18,6 @@ public class PatientDto {
     private Date createdAt;
     private Date updatedAt;
 
-    // Конструкторы
     public PatientDto() {}
 
     // Геттеры и сеттеры

@@ -16,17 +16,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Service
-public class UserDetailsServiceImpl implements UserDetailsService { // Реализуем интерфейс
+public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UserRepository userRepository;
-
-    @Autowired
-    public UserDetailsServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private UserRepository userRepository;
 
     @Override
-    @Transactional(readOnly = true) // Используем аннотацию Spring
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserEntity userEntity = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Пользователь с email: " + email + " не найден"));
@@ -38,8 +33,12 @@ public class UserDetailsServiceImpl implements UserDetailsService { // Реал�
             throw new IllegalStateException("Роль для пользователя " + email + " не определена.");
         }
 
-        // Используем импортированный SpringSecurityUser и метод getPasswordHash()
         return new User(userEntity.getEmail(), userEntity.getPassword(), userEntity.isActive(),
                 true, true, true, authorities);
+    }
+
+    @Autowired
+    public void setUserRepository(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 }

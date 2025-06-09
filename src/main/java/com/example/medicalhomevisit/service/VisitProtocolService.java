@@ -22,22 +22,13 @@ public class VisitProtocolService {
 
     private static final Logger log = LoggerFactory.getLogger(VisitProtocolService.class);
 
-    @Autowired
     private VisitProtocolRepository visitProtocolRepository;
-    @Autowired
     private VisitRepository visitRepository;
-    @Autowired
     private ProtocolTemplateRepository protocolTemplateRepository;
-    @Autowired
     private UserRepository userRepository;
-    @Autowired
     private MedicalPersonRepository medicalPersonRepository;
-    @Autowired
     private PatientRepository patientRepository;
 
-    /**
-     * Получить протокол по ID визита
-     */
     @Transactional(readOnly = true)
     public VisitProtocolDto getProtocolForVisit(UUID visitId) {
         log.info("SERVICE: Getting protocol for visit ID: {}", visitId);
@@ -59,9 +50,6 @@ public class VisitProtocolService {
         return convertToDto(protocol);
     }
 
-    /**
-     * Сохранить протокол (создать или обновить)
-     */
     public VisitProtocolDto saveProtocol(VisitProtocolDto protocolDto) {
         log.info("SERVICE: Saving protocol for visit ID: {}", protocolDto.getVisitId());
 
@@ -70,7 +58,6 @@ public class VisitProtocolService {
 
         checkAccessToVisit(visit);
 
-        // Ищем существующий протокол
         VisitProtocol existingProtocol = visitProtocolRepository.findByVisit_Id(protocolDto.getVisitId())
                 .orElse(null);
 
@@ -78,21 +65,17 @@ public class VisitProtocolService {
         boolean isUpdate = false;
 
         if (existingProtocol != null) {
-            // Обновляем существующий
             log.info("SERVICE: Updating existing protocol for visit {}", protocolDto.getVisitId());
             protocol = existingProtocol;
             isUpdate = true;
         } else {
-            // Создаем новый
             log.info("SERVICE: Creating new protocol for visit {}", protocolDto.getVisitId());
             protocol = new VisitProtocol();
             protocol.setVisit(visit);
         }
 
-        // Заполняем данные
         updateProtocolFromDto(protocol, protocolDto);
 
-        // Сохраняем
         VisitProtocol savedProtocol = visitProtocolRepository.save(protocol);
         log.info("SERVICE: Protocol {} successfully for visit {}",
                 isUpdate ? "updated" : "created", protocolDto.getVisitId());
@@ -100,9 +83,6 @@ public class VisitProtocolService {
         return convertToDto(savedProtocol);
     }
 
-    /**
-     * Применить шаблон к протоколу
-     */
     public VisitProtocolDto applyTemplate(UUID visitId, UUID templateId) {
         log.info("SERVICE: Applying template {} to visit {}", templateId, visitId);
 
@@ -114,7 +94,6 @@ public class VisitProtocolService {
         ProtocolTemplate template = protocolTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new EntityNotFoundException("Шаблон не найден: " + templateId));
 
-        // Получаем или создаем протокол
         VisitProtocol protocol = visitProtocolRepository.findByVisit_Id(visitId)
                 .orElseGet(() -> {
                     VisitProtocol newProtocol = new VisitProtocol();
@@ -122,7 +101,6 @@ public class VisitProtocolService {
                     return newProtocol;
                 });
 
-        // Применяем шаблон (сохраняем существующие витальные показатели)
         Float currentTemp = protocol.getTemperature();
         Integer currentSystolic = protocol.getSystolicBP();
         Integer currentDiastolic = protocol.getDiastolicBP();
@@ -135,7 +113,6 @@ public class VisitProtocolService {
         protocol.setObjectiveStatus(template.getObjectiveStatusTemplate());
         protocol.setRecommendations(template.getRecommendationsTemplate());
 
-        // Восстанавливаем витальные показатели
         protocol.setTemperature(currentTemp);
         protocol.setSystolicBP(currentSystolic);
         protocol.setDiastolicBP(currentDiastolic);
@@ -148,9 +125,6 @@ public class VisitProtocolService {
         return convertToDto(savedProtocol);
     }
 
-    /**
-     * Удалить протокол
-     */
     public void deleteProtocol(UUID visitId) {
         log.info("SERVICE: Deleting protocol for visit ID: {}", visitId);
 
@@ -166,9 +140,6 @@ public class VisitProtocolService {
         log.info("SERVICE: Protocol deleted successfully for visit {}", visitId);
     }
 
-    /**
-     * Проверка прав доступа к визиту
-     */
     private void checkAccessToVisit(Visit visit) {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity currentUser = userRepository.findByEmail(currentUserEmail)
@@ -176,12 +147,10 @@ public class VisitProtocolService {
 
         UserRole role = currentUser.getRole().getName();
 
-        // Админ и диспетчер могут видеть любые протоколы
-        if (role == UserRole.ADMIN || role == UserRole.DISPATCHER) {
+        if (role == UserRole.ADMIN) {
             return;
         }
 
-        // Медработник может работать только с протоколами своих визитов
         if (role == UserRole.MEDICAL_STAFF) {
             MedicalPerson medicalPerson = medicalPersonRepository.findByUser(currentUser)
                     .orElse(null);
@@ -192,7 +161,6 @@ public class VisitProtocolService {
             }
         }
 
-        // Пациент может видеть протоколы своих визитов (только чтение)
         if (role == UserRole.PATIENT) {
             Patient patient = patientRepository.findByUser(currentUser)
                     .orElse(null);
@@ -205,9 +173,6 @@ public class VisitProtocolService {
         throw new AccessDeniedException("У вас нет доступа к протоколу этого визита");
     }
 
-    /**
-     * Обновление протокола из DTO
-     */
     private void updateProtocolFromDto(VisitProtocol protocol, VisitProtocolDto dto) {
         protocol.setComplaints(dto.getComplaints());
         protocol.setAnamnesis(dto.getAnamnesis());
@@ -221,7 +186,6 @@ public class VisitProtocolService {
         protocol.setPulse(dto.getPulse());
         protocol.setAdditionalVitals(dto.getAdditionalVitals());
 
-        // Если указан templateId, устанавливаем шаблон
         if (dto.getTemplateId() != null) {
             ProtocolTemplate template = protocolTemplateRepository.findById(dto.getTemplateId())
                     .orElse(null);
@@ -229,9 +193,6 @@ public class VisitProtocolService {
         }
     }
 
-    /**
-     * Конвертация Entity в DTO
-     */
     private VisitProtocolDto convertToDto(VisitProtocol entity) {
         VisitProtocolDto dto = new VisitProtocolDto();
 
@@ -253,5 +214,35 @@ public class VisitProtocolService {
         dto.setUpdatedAt(entity.getUpdatedAt());
 
         return dto;
+    }
+
+    @Autowired
+    public void setVisitProtocolRepository(VisitProtocolRepository visitProtocolRepository) {
+        this.visitProtocolRepository = visitProtocolRepository;
+    }
+
+    @Autowired
+    public void setVisitRepository(VisitRepository visitRepository) {
+        this.visitRepository = visitRepository;
+    }
+
+    @Autowired
+    public void setProtocolTemplateRepository(ProtocolTemplateRepository protocolTemplateRepository) {
+        this.protocolTemplateRepository = protocolTemplateRepository;
+    }
+
+    @Autowired
+    public void setUserRepository(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Autowired
+    public void setMedicalPersonRepository(MedicalPersonRepository medicalPersonRepository) {
+        this.medicalPersonRepository = medicalPersonRepository;
+    }
+
+    @Autowired
+    public void setPatientRepository(PatientRepository patientRepository) {
+        this.patientRepository = patientRepository;
     }
 }

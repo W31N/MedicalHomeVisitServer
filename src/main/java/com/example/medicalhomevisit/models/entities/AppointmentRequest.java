@@ -13,13 +13,11 @@ public class AppointmentRequest extends BaseEntity {
     private MedicalPerson medicalPerson;
     private UserEntity assignedBy;
     private String address;
-
     private RequestType requestType;
     private String symptoms;
     private String additionalNotes;
     private Date preferredDateTime;
     private RequestStatus status;
-
     private Date assignedAt;
     private String assignmentNote;
     private String responseMessage;
@@ -65,7 +63,7 @@ public class AppointmentRequest extends BaseEntity {
         this.assignedBy = assignedBy;
     }
 
-    @Enumerated(EnumType.STRING) // Рекомендуется хранить enum как строку
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     public RequestType getRequestType() {
         return requestType;

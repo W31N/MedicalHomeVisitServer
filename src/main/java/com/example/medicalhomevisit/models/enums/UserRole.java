@@ -2,7 +2,7 @@ package com.example.medicalhomevisit.models.enums;
 
 
 public enum UserRole {
-    PATIENT(1), ADMIN(2), MEDICAL_STAFF(3), DISPATCHER(4);
+    PATIENT(1), ADMIN(2), MEDICAL_STAFF(3);
 
     private int value;
 
