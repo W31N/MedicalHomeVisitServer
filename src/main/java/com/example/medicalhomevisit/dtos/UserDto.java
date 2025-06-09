@@ -7,6 +7,7 @@ public class UserDto {
     private String email;
     private String displayName;
     private String role;
+    private UUID medicalPersonId;
 
     public UserDto() {}
 
@@ -41,5 +42,13 @@ public class UserDto {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public UUID getMedicalPersonId() {
+        return medicalPersonId;
+    }
+
+    public void setMedicalPersonId(UUID medicalPersonId) {
+        this.medicalPersonId = medicalPersonId;
     }
 }

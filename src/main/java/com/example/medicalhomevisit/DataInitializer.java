@@ -1,20 +1,27 @@
 package com.example.medicalhomevisit;
 
 import com.example.medicalhomevisit.models.entities.*;
+import com.example.medicalhomevisit.models.enums.RequestStatus;
+import com.example.medicalhomevisit.models.enums.RequestType;
 import com.example.medicalhomevisit.models.enums.UserRole;
+import com.example.medicalhomevisit.models.enums.VisitStatus;
 import com.example.medicalhomevisit.repositories.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 @Component
+//@Profile("!test")
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
@@ -24,7 +31,9 @@ public class DataInitializer implements CommandLineRunner {
     private final MedicalPersonRepository medicalPersonRepository;
     private final PasswordEncoder passwordEncoder;
     private final PatientRepository patientRepository;
-    private final ProtocolTemplateRepository protocolTemplateRepository; // Добавляем репозиторий для шаблонов
+    private final ProtocolTemplateRepository protocolTemplateRepository;
+    private final AppointmentRequestRepository appointmentRequestRepository;
+    private final VisitRepository visitRepository;
 
     @Autowired
     public DataInitializer(RoleRepository roleRepository,
@@ -32,13 +41,17 @@ public class DataInitializer implements CommandLineRunner {
                            MedicalPersonRepository medicalPersonRepository,
                            PasswordEncoder passwordEncoder,
                            PatientRepository patientRepository,
-                           ProtocolTemplateRepository protocolTemplateRepository) {
+                           ProtocolTemplateRepository protocolTemplateRepository,
+                           AppointmentRequestRepository appointmentRequestRepository,
+                           VisitRepository visitRepository) {
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
         this.medicalPersonRepository = medicalPersonRepository;
         this.passwordEncoder = passwordEncoder;
         this.patientRepository = patientRepository;
         this.protocolTemplateRepository = protocolTemplateRepository;
+        this.appointmentRequestRepository = appointmentRequestRepository;
+        this.visitRepository = visitRepository;
     }
 
     @Override
@@ -131,6 +144,9 @@ public class DataInitializer implements CommandLineRunner {
         // 5. Создаем шаблоны протоколов, если их еще нет
         createProtocolTemplates();
 
+        // 6. Создаем тестовые заявки и визиты
+        createTestAppointmentRequestsAndVisits();
+
         log.info("DataInitializer: Data initialization finished.");
     }
 
@@ -214,5 +230,77 @@ public class DataInitializer implements CommandLineRunner {
 
         log.info("DataInitializer: Protocol templates creation completed. Total templates: {}",
                 protocolTemplateRepository.count());
+    }
+
+    private void createTestAppointmentRequestsAndVisits() {
+        log.info("DataInitializer: Checking and creating test appointment request and visit...");
+
+        // Проверяем, есть ли уже заявки в базе
+        long requestsCount = appointmentRequestRepository.count();
+        if (requestsCount > 0) {
+            log.info("DataInitializer: Appointment requests already exist ({}), skipping creation.", requestsCount);
+            return;
+        }
+
+        // Получаем тестовые сущности
+        UserEntity adminUser = userRepository.findByEmail("admin@example.com")
+                .orElseThrow(() -> new RuntimeException("Admin user not found"));
+
+        UserEntity patientUser = userRepository.findByEmail("patient.test@example.com")
+                .orElseThrow(() -> new RuntimeException("Patient user not found"));
+
+        Patient patient = patientRepository.findByUser(patientUser)
+                .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+
+        UserEntity medicalStaffUser = userRepository.findByEmail("doctor.test@example.com")
+                .orElseThrow(() -> new RuntimeException("Medical staff user not found"));
+
+        MedicalPerson medicalPerson = medicalPersonRepository.findByUser(medicalStaffUser)
+                .orElseThrow(() -> new RuntimeException("Medical person profile not found"));
+
+        // Создаем тестовую заявку (статус SCHEDULED) с визитом
+        Calendar cal = Calendar.getInstance();
+
+        AppointmentRequest testRequest = new AppointmentRequest();
+        testRequest.setPatient(patient);
+        testRequest.setRequestType(RequestType.REGULAR);
+        testRequest.setSymptoms("Повышение температуры тела до 38.5°C, кашель, общая слабость, головная боль");
+        testRequest.setAdditionalNotes("Болею уже 3 дня, температура не сбивается");
+        testRequest.setAddress("ул. Ленина, д. 15, кв. 25");
+        testRequest.setStatus(RequestStatus.SCHEDULED);
+        testRequest.setMedicalPerson(medicalPerson);
+        testRequest.setAssignedBy(adminUser);
+
+        // Время назначения - 2 часа назад
+        cal.add(Calendar.HOUR, -2);
+        testRequest.setAssignedAt(cal.getTime());
+
+        // Запланированное время визита - завтра в 14:00
+        cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY, 14);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        testRequest.setPreferredDateTime(cal.getTime());
+
+        testRequest.setAssignmentNote("Назначен доктор Тестов для домашнего визита");
+        testRequest.setResponseMessage("Врач назначен, визит запланирован на завтра");
+
+        AppointmentRequest savedRequest = appointmentRequestRepository.save(testRequest);
+        log.info("DataInitializer: Created test appointment request with ID: {}", savedRequest.getId());
+
+        // Создаем визит для заявки
+        Visit testVisit = new Visit();
+        testVisit.setAppointmentRequest(savedRequest);
+        testVisit.setScheduledTime(testRequest.getPreferredDateTime());
+        testVisit.setStatus(VisitStatus.PLANNED);
+        testVisit.setNotes("Домашний визит для лечения ОРВИ. Пациент с высокой температурой и общими симптомами простуды.");
+
+        Visit savedVisit = visitRepository.save(testVisit);
+        log.info("DataInitializer: Created test visit with ID: {}", savedVisit.getId());
+
+        log.info("DataInitializer: Test appointment request and visit creation completed. " +
+                        "Request ID: {}, Visit ID: {}",
+                savedRequest.getId(), savedVisit.getId());
     }
 }
